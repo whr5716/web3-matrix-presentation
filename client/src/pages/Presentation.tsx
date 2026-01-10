@@ -95,7 +95,7 @@ export default function Presentation() {
       {/* Main Presentation Container */}
       <div className="w-full max-w-6xl">
         {/* Video Section */}
-        <div className="relative w-full mb-8 rounded-lg overflow-hidden shadow-2xl">
+        <div className="relative w-full mb-8 rounded-lg overflow-hidden shadow-2xl bg-black">
           <video
             ref={videoRef}
             onTimeUpdate={handleTimeUpdate}
@@ -103,9 +103,10 @@ export default function Presentation() {
             onEnded={() => setIsPlaying(false)}
             className="w-full h-auto bg-black"
             style={{ aspectRatio: "16/9" }}
+            controls
           >
             <source src="/mario-talking-video.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
+            <p className="text-white p-8 text-center">Your browser does not support HTML5 video.</p>
           </video>
 
           {/* Slide Overlay */}
@@ -177,8 +178,10 @@ export default function Presentation() {
         </div>
       </div>
 
-      {/* Hidden Audio Element */}
-      <audio ref={audioRef} src="/mario-narration-full.wav" />
+      {/* Hidden Audio Element with fallback */}
+      <audio ref={audioRef}>
+        <source src="/mario-narration-full.wav" type="audio/wav" />
+      </audio>
     </div>
   );
 }
