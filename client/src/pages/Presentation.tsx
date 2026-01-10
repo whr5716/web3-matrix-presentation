@@ -101,7 +101,7 @@ export default function Presentation() {
             style={{ aspectRatio: "16/9" }}
             controls
           >
-            <source src="/mario-talking-video.mp4" type="video/mp4" />
+            <source src="/mario-talking-video-improved.mp4" type="video/mp4" />
             <p className="text-white p-4 sm:p-6 md:p-8 text-center text-sm sm:text-base">
               Your browser does not support HTML5 video.
             </p>
