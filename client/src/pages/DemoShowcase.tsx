@@ -50,20 +50,20 @@ export default function DemoShowcase() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Tab Navigation */}
-          <TabsList className="grid w-full grid-cols-2 mb-8 bg-slate-800 border border-slate-700">
+          <TabsList className="grid w-full grid-cols-2 mb-8 bg-slate-800 border border-slate-700 p-1 rounded-lg">
             <TabsTrigger
               value="video"
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              className="text-white px-4 py-2 rounded data-[state=active]:bg-blue-600 data-[state=active]:text-white text-xs sm:text-sm"
             >
-              <Video className="w-4 h-4 mr-2" />
+              <Video className="w-4 h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Demo Video</span>
               <span className="sm:hidden">Video</span>
             </TabsTrigger>
             <TabsTrigger
               value="comparison"
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              className="text-white px-4 py-2 rounded data-[state=active]:bg-blue-600 data-[state=active]:text-white text-xs sm:text-sm"
             >
-              <DollarSign className="w-4 h-4 mr-2" />
+              <DollarSign className="w-4 h-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Hotel Comparison</span>
               <span className="sm:hidden">Comparison</span>
             </TabsTrigger>
