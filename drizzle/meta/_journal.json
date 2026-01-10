@@ -15,6 +15,20 @@
       "when": 1768010852210,
       "tag": "0001_living_apocalypse",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1768012186340,
+      "tag": "0002_nebulous_mojo",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1768012417904,
+      "tag": "0003_faithful_exodus",
+      "breakpoints": true
     }
   ]
 }
