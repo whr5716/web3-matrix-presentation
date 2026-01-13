@@ -2,18 +2,41 @@ import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Play, DollarSign, Video } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Play, DollarSign, Video, Zap } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 
 export default function DemoShowcase() {
   const [activeTab, setActiveTab] = useState("video");
+  const [isRunningBot, setIsRunningBot] = useState(false);
+  const [botResult, setBotResult] = useState<any>(null);
 
   // Fetch hotel comparison data
   const { data: demo, isLoading: isLoadingComparisons } =
     trpc.hotelComparison.getRandomDemo.useQuery(undefined, {
       enabled: true,
     });
+
+  // Run ScrapingBee bot
+  const runBotMutation = trpc.scrapingbee.runComparison.useMutation({
+    onMutate: () => {
+      setIsRunningBot(true);
+      setBotResult(null);
+    },
+    onSuccess: (data) => {
+      setBotResult(data);
+      setIsRunningBot(false);
+    },
+    onError: (error) => {
+      console.error("Bot error:", error);
+      setIsRunningBot(false);
+    },
+  });
+
+  const handleRunBot = () => {
+    runBotMutation.mutate({});
+  };
 
   // Extract public and wholesale prices
   const publicComparison = demo?.comparisons.find(
@@ -158,9 +181,136 @@ export default function DemoShowcase() {
 
           {/* Hotel Comparison Tab */}
           <TabsContent value="comparison" className="space-y-6">
+            {/* Run Live Bot Button */}
+            <Card className="bg-blue-900/30 border-blue-700">
+              <CardContent className="pt-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-white mb-1">🤖 Run Live Bot</h3>
+                    <p className="text-sm text-slate-300">
+                      Scrape real hotel prices from Hotels.com, Expedia, and Booking.com
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleRunBot}
+                    disabled={isRunningBot}
+                    className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
+                  >
+                    {isRunningBot ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Running...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4 mr-2" />
+                        Run Comparison
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Bot Results */}
+            {botResult && (
+              <Card className="bg-green-900/30 border-green-700">
+                <CardHeader>
+                  <CardTitle className="text-white">✅ Live Bot Results</CardTitle>
+                  <CardDescription>
+                    Real prices scraped from booking sites
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-slate-400">Hotel</p>
+                        <p className="text-lg font-semibold text-white">{botResult.hotel}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-400">Location</p>
+                        <p className="text-lg font-semibold text-white">{botResult.city}, {botResult.country}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-400">Check-in</p>
+                        <p className="text-lg font-semibold text-white">{botResult.checkIn}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-400">Check-out</p>
+                        <p className="text-lg font-semibold text-white">{botResult.checkOut}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                      {botResult.hotelsComPrice && (
+                        <Card className="bg-slate-700 border-slate-600">
+                          <CardContent className="pt-4">
+                            <p className="text-xs text-slate-400">Hotels.com</p>
+                            <p className="text-2xl font-bold text-white">${botResult.hotelsComPrice.toFixed(2)}</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                      {botResult.expediaPrice && (
+                        <Card className="bg-slate-700 border-slate-600">
+                          <CardContent className="pt-4">
+                            <p className="text-xs text-slate-400">Expedia</p>
+                            <p className="text-2xl font-bold text-white">${botResult.expediaPrice.toFixed(2)}</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                      {botResult.bookingPrice && (
+                        <Card className="bg-slate-700 border-slate-600">
+                          <CardContent className="pt-4">
+                            <p className="text-xs text-slate-400">Booking.com</p>
+                            <p className="text-2xl font-bold text-white">${botResult.bookingPrice.toFixed(2)}</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                      {botResult.whrPrice && (
+                        <Card className="bg-green-900/50 border-green-700">
+                          <CardContent className="pt-4">
+                            <p className="text-xs text-slate-400">WHR Price</p>
+                            <p className="text-2xl font-bold text-green-400">${botResult.whrPrice.toFixed(2)}</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                    {botResult.savings && (
+                      <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 mt-4">
+                        <p className="text-sm text-slate-300">💰 Estimated Savings</p>
+                        <p className="text-3xl font-bold text-green-400">${botResult.savings.toFixed(2)}</p>
+                      </div>
+                    )}
+                    {botResult.screenshotUrls && (
+                      <div className="mt-4">
+                        <p className="text-sm text-slate-400 mb-2">Screenshots</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          {botResult.screenshotUrls.hotelscom && (
+                            <a href={botResult.screenshotUrls.hotelscom} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm">
+                              📸 Hotels.com
+                            </a>
+                          )}
+                          {botResult.screenshotUrls.expedia && (
+                            <a href={botResult.screenshotUrls.expedia} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm">
+                              📸 Expedia
+                            </a>
+                          )}
+                          {botResult.screenshotUrls.booking && (
+                            <a href={botResult.screenshotUrls.booking} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-sm">
+                              📸 Booking.com
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-white">Live Hotel Price Comparison</CardTitle>
+                <CardTitle className="text-white">Demo Hotel Price Comparison</CardTitle>
                 <CardDescription>
                   See how Wholesale Hotel Rates compares to public booking sites
                 </CardDescription>
