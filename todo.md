@@ -63,9 +63,9 @@
 - [ ] Provide development URL to user
 
 ## Phase 10: Remove OAuth and Implement 2FA for Railway
-- [ ] Remove Manus OAuth dependencies from context and routers
-- [ ] Implement simple 2FA authentication system
-- [ ] Update tRPC endpoints to work without OAuth
+- [x] Remove Manus OAuth dependencies from context and routers
+- [x] Implement simple 2FA authentication system (auth2fa.ts, auth2faRouter.ts)
+- [x] Update tRPC endpoints to work without OAuth (context.ts, routers.ts)
 - [ ] Test authentication flow
 - [ ] Deploy to Railway and verify working
 - [ ] Collect real hotel comparison data with screenshots
