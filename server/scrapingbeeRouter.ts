@@ -88,6 +88,7 @@ async function scrapeWithScrapingBee(
   error?: string;
 }> {
   try {
+    console.log(`[ScrapingBee] Scraping URL: ${url}`);
     const params: any = {
       api_key: SCRAPINGBEE_API_KEY,
       url: url,
@@ -107,7 +108,10 @@ async function scrapeWithScrapingBee(
       params.extract_rules = extractorRules;
     }
 
-    const response = await axios.get(SCRAPINGBEE_API_URL, { params });
+    const response = await axios.get(SCRAPINGBEE_API_URL, { params, timeout: 60000 });
+    console.log(`[ScrapingBee] Response status: ${response.status}`);
+    console.log(`[ScrapingBee] Has screenshot: ${!!response.data.screenshot}`);
+    console.log(`[ScrapingBee] Response keys: ${Object.keys(response.data).join(", ")}`);
 
     return {
       success: true,
@@ -116,6 +120,11 @@ async function scrapeWithScrapingBee(
       data: response.data.data,
     };
   } catch (error: any) {
+    console.error(`[ScrapingBee] Error: ${error.message}`);
+    if (error.response) {
+      console.error(`[ScrapingBee] Response status: ${error.response.status}`);
+      console.error(`[ScrapingBee] Response data: ${JSON.stringify(error.response.data)}`);
+    }
     return {
       success: false,
       error: error.message,
@@ -149,6 +158,7 @@ async function scrapeHotelsComPrice(city: string, hotel: string, checkIn: string
     }
   }
 
+  console.log(`[Hotels.com] Failed to scrape price. Success: ${result.success}, Error: ${result.error}`);
   return {
     price: null,
     screenshot: null,
@@ -182,6 +192,7 @@ async function scrapeExpediaPrice(city: string, hotel: string, checkIn: string, 
     }
   }
 
+  console.log(`[Expedia] Failed to scrape price. Success: ${result.success}, Error: ${result.error}`);
   return {
     price: null,
     screenshot: null,
@@ -215,6 +226,7 @@ async function scrapeBookingComPrice(city: string, hotel: string, checkIn: strin
     }
   }
 
+  console.log(`[Booking.com] Failed to scrape price. Success: ${result.success}, Error: ${result.error}`);
   return {
     price: null,
     screenshot: null,
