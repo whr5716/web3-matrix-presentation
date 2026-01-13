@@ -61,3 +61,11 @@
 ## Phase 9: Final Delivery
 - [ ] Create checkpoint with working price comparison system
 - [ ] Provide development URL to user
+
+## Phase 10: Remove OAuth and Implement 2FA for Railway
+- [ ] Remove Manus OAuth dependencies from context and routers
+- [ ] Implement simple 2FA authentication system
+- [ ] Update tRPC endpoints to work without OAuth
+- [ ] Test authentication flow
+- [ ] Deploy to Railway and verify working
+- [ ] Collect real hotel comparison data with screenshots
