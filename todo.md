@@ -37,17 +37,27 @@
 - [x] Optimize performance and loading
 - [x] Write and pass unit tests (17 tests passed)
 
-## Phase 8: Price Comparison System
+## Phase 7: Railway Deployment (Temporary - for future use)
+- [x] Create GitHub repository (whr5716/web3-matrix-presentation)
+- [x] Push code to GitHub
+- [x] Create Railway project (W3M / striking-creativity)
+- [x] Connect GitHub repo to Railway
+- [x] Configure environment variables
+- [ ] Note: Railway deployment requires Manus OAuth env vars - use as backup if Manus quota issues persist
+
+## Phase 8: Price Comparison System - ScrapingBee Implementation
 - [x] Implement real price data collection from Wholesale Hotel Rates
 - [x] Create major cities list for global hotel selection (Tokyo, London, NYC, Paris, Dubai, Singapore, etc.)
 - [x] Modify bot to randomly select hotels from major worldwide cities
 - [x] Create data collection automation script with proven selectors
 - [x] Bot successfully logs in and navigates to booking platform
-- [ ] Run bot to collect real data (blocked by database quota - needs upgrade)
+- [x] Set up ScrapingBee account with 1000 free API credits
+- [x] Create ScrapingBee hotel comparison bot (scrapingbee-hotel-bot.ts)
+- [x] Create production-ready tRPC endpoint (scrapingbeeRouter.ts)
+- [x] Integrate ScrapingBee router into main app router
+- [ ] Test bot with real data collection and screenshots
 - [ ] Verify demo displays real data with correct savings calculations
 
 ## Phase 9: Final Delivery
-- [ ] Upgrade database quota to allow data collection
-- [ ] Run bot to populate database with real hotel comparison data
 - [ ] Create checkpoint with working price comparison system
 - [ ] Provide development URL to user
