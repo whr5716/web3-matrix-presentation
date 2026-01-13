@@ -37,7 +37,17 @@
 - [x] Optimize performance and loading
 - [x] Write and pass unit tests (17 tests passed)
 
-## Phase 7: Delivery
-- [ ] Create checkpoint for POC
+## Phase 8: Price Comparison System
+- [x] Implement real price data collection from Wholesale Hotel Rates
+- [x] Create major cities list for global hotel selection (Tokyo, London, NYC, Paris, Dubai, Singapore, etc.)
+- [x] Modify bot to randomly select hotels from major worldwide cities
+- [x] Create data collection automation script with proven selectors
+- [x] Bot successfully logs in and navigates to booking platform
+- [ ] Run bot to collect real data (blocked by database quota - needs upgrade)
+- [ ] Verify demo displays real data with correct savings calculations
+
+## Phase 9: Final Delivery
+- [ ] Upgrade database quota to allow data collection
+- [ ] Run bot to populate database with real hotel comparison data
+- [ ] Create checkpoint with working price comparison system
 - [ ] Provide development URL to user
-- [ ] Gather feedback for full presentation build
