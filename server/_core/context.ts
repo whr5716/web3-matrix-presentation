@@ -1,19 +1,20 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
-import { authenticateRequest, type SessionPayload } from "./auth2fa";
+import type { User } from "../../drizzle/schema";
+import { sdk } from "./sdk";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
-  user: SessionPayload | null;
+  user: User | null;
 };
 
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  let user: SessionPayload | null = null;
+  let user: User | null = null;
 
   try {
-    user = await authenticateRequest(opts.req);
+    user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
     // Authentication is optional for public procedures.
     user = null;

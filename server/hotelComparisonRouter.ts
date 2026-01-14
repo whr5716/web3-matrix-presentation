@@ -3,7 +3,6 @@ import { getDb } from "./db";
 import { hotelComparisons, priceData, comparisonResults } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { runHotelComparison } from "./hotelComparison";
 
 export const hotelComparisonRouter = router({
   /**
@@ -148,9 +147,9 @@ export const hotelComparisonRouter = router({
             },
           ],
           savings: {
-            savingsAmount: 195,
+            savingsAmount: 195, // Average of public rates - WHR rate
             savingsPercentage: 26.2,
-            cashBackAmount: 16.2,
+            cashBackAmount: 16.2, // 3% of WHR total
           },
         };
       }
@@ -206,29 +205,4 @@ export const hotelComparisonRouter = router({
       return null;
     }
   }),
-
-  /**
-   * Run a hotel comparison and collect real pricing data
-   */
-  runComparison: publicProcedure
-    .input(
-      z.object({
-        hotelName: z.string().optional(),
-        location: z.string().optional(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      try {
-        console.log("Starting hotel comparison bot...");
-        await runHotelComparison(input);
-        console.log("Hotel comparison completed");
-        return { success: true, message: "Hotel comparison completed" };
-      } catch (error) {
-        console.error("Error running hotel comparison:", error);
-        return {
-          success: false,
-          message: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        };
-      }
-    }),
 });

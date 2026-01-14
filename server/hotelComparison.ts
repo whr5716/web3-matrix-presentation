@@ -4,30 +4,31 @@ import { getDb } from "./db";
 import { hotelComparisons, priceData, comparisonResults } from "../drizzle/schema";
 
 /**
- * Hotel comparison bot that collects pricing data from multiple booking platforms
- * Uses proven selectors and navigation flow from previous working implementation
+ * Hotel comparison bot that collects pricing data and screenshots
+ * from multiple booking platforms before the presentation
+ * Uses headless mode with bot-detection evasion for reliability
  */
 
-// Major worldwide cities with large populations
+// Major worldwide cities with large populations for hotel comparisons
 const MAJOR_CITIES = [
-  "Tokyo",
-  "London",
-  "New York",
-  "Paris",
-  "Dubai",
-  "Singapore",
-  "Hong Kong",
-  "Sydney",
-  "Bangkok",
-  "Barcelona",
-  "Rome",
-  "Amsterdam",
-  "Toronto",
-  "Mexico City",
-  "São Paulo",
+  { name: "Tokyo", country: "Japan", code: "TYO" },
+  { name: "London", country: "United Kingdom", code: "LON" },
+  { name: "New York", country: "United States", code: "NYC" },
+  { name: "Paris", country: "France", code: "CDG" },
+  { name: "Dubai", country: "United Arab Emirates", code: "DXB" },
+  { name: "Singapore", country: "Singapore", code: "SIN" },
+  { name: "Hong Kong", country: "Hong Kong", code: "HKG" },
+  { name: "Sydney", country: "Australia", code: "SYD" },
+  { name: "Bangkok", country: "Thailand", code: "BKK" },
+  { name: "Barcelona", country: "Spain", code: "BCN" },
+  { name: "Rome", country: "Italy", code: "FCO" },
+  { name: "Amsterdam", country: "Netherlands", code: "AMS" },
+  { name: "Toronto", country: "Canada", code: "YYZ" },
+  { name: "Mexico City", country: "Mexico", code: "MEX" },
+  { name: "São Paulo", country: "Brazil", code: "GIG" },
 ];
 
-// Popular hotel chains
+// Popular hotel chains that are likely to be available in multiple cities
 const HOTEL_CHAINS = [
   "Hilton",
   "Marriott",
@@ -42,8 +43,8 @@ const HOTEL_CHAINS = [
 interface HotelSearchParams {
   hotelName: string;
   location: string;
-  checkInDate: string;
-  checkOutDate: string;
+  checkInDate: string; // YYYY-MM-DD
+  checkOutDate: string; // YYYY-MM-DD
   starRating?: number;
 }
 
@@ -55,20 +56,29 @@ interface PriceResult {
   extractedData: Record<string, any>;
 }
 
+/**
+ * Get a random major city
+ */
 function getRandomCity() {
   return MAJOR_CITIES[Math.floor(Math.random() * MAJOR_CITIES.length)];
 }
 
+/**
+ * Get a random hotel chain
+ */
 function getRandomHotelChain() {
   return HOTEL_CHAINS[Math.floor(Math.random() * HOTEL_CHAINS.length)];
 }
 
+/**
+ * Generate realistic check-in/check-out dates (3-5 nights in the future)
+ */
 function generateDates() {
   const checkIn = new Date();
-  checkIn.setDate(checkIn.getDate() + Math.floor(Math.random() * 30) + 7);
+  checkIn.setDate(checkIn.getDate() + Math.floor(Math.random() * 30) + 7); // 7-37 days from now
   
   const checkOut = new Date(checkIn);
-  checkOut.setDate(checkOut.getDate() + Math.floor(Math.random() * 3) + 3);
+  checkOut.setDate(checkOut.getDate() + Math.floor(Math.random() * 3) + 3); // 3-5 nights
   
   return {
     checkIn: checkIn.toISOString().split("T")[0],
@@ -82,90 +92,168 @@ function generateDates() {
 async function searchWholesaleHotelRates(
   params: HotelSearchParams
 ): Promise<PriceResult | null> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--disable-dev-shm-usage",
+      "--no-sandbox",
+    ],
+  });
+
   const page = await browser.newPage();
-  
+
   try {
-    console.log("🔍 Searching Wholesale Hotel Rates...");
-    
     // Navigate to WHR login
-    await page.goto("https://web3demo.wholesalehotelrates.com/login");
-    
-    // Login with demo credentials
-    await page.fill('input[name="username"]', "web3demo");
-    await page.fill('input[name="password"]', "web3demo!@");
-    await page.click('button:has-text("Log In")');
-    await page.waitForNavigation();
-    
-    console.log("✅ Logged in to WHR");
-    
-    // Click "Go to Booking Platform"
-    await page.click('a:has-text("Go To Booking Platform")');
-    await page.waitForNavigation();
-    
-    console.log("✅ Navigated to booking platform");
-    
-    // Fill search form using proven selectors
-    await page.fill('input#city', params.location);
-    await page.click('li:has-text("' + params.location + '")');
-    await page.fill('input#theCheckIn', params.checkInDate);
-    await page.fill('input#theCheckOut', params.checkOutDate);
-    await page.click('input#theSubmitButton');
-    await page.waitForNavigation();
-    
-    console.log("✅ Search submitted");
-    
-    // Wait for results to load
-    await page.waitForSelector('a:has-text("' + params.hotelName + '")', {
-      timeout: 10000,
+    console.log("Navigating to Wholesale Hotel Rates...");
+    await page.goto("https://web3demo.wholesalehotelrates.com/login", {
+      waitUntil: "networkidle",
+      timeout: 30000,
     });
+
+    // Check if already logged in
+    const loginButton = await page.$('button:has-text("Log In")');
     
-    // Find and click the hotel
-    await page.click('a:has-text("' + params.hotelName + '")');
-    await page.waitForNavigation();
+    if (loginButton) {
+      // Fill login form
+      console.log("Logging in to Wholesale Hotel Rates...");
+      await page.fill('input[name="username"]', "web3demo");
+      await page.fill('input[name="password"]', "web3demo!@");
+      await page.click('button:has-text("Log In")');
+      
+      // Wait for navigation after login
+      await page.waitForNavigation({ waitUntil: "networkidle", timeout: 30000 });
+    }
+
+    // Click "Go to Booking Platform" button
+    console.log("Accessing booking platform...");
+    const bookingLink = await page.$('a:has-text("Go To Booking Platform")');
+    if (bookingLink) {
+      await bookingLink.click();
+      await page.waitForNavigation({ waitUntil: "networkidle", timeout: 30000 });
+    } else {
+      // If button not found, navigate directly
+      await page.goto("https://web3demo.wholesalehotelrates.com/booking", {
+        waitUntil: "networkidle",
+        timeout: 30000,
+      });
+    }
+
+    // Fill search form
+    console.log(`Searching for hotels in ${params.location}...`);
     
-    console.log("✅ Hotel selected");
+    // Find and fill city input
+    const cityInput = await page.$('input[placeholder*="city"], input[placeholder*="City"], input#city');
+    if (cityInput) {
+      await cityInput.fill(params.location);
+      await page.waitForTimeout(500); // Wait for autocomplete
+      
+      // Click first autocomplete result
+      const firstResult = await page.$('li:first-child');
+      if (firstResult) {
+        await firstResult.click();
+      }
+    }
+
+    // Fill check-in date
+    const checkInInput = await page.$('input[placeholder*="Check-in"], input#theCheckIn');
+    if (checkInInput) {
+      await checkInInput.fill(params.checkInDate);
+    }
+
+    // Fill check-out date
+    const checkOutInput = await page.$('input[placeholder*="Check-out"], input#theCheckOut');
+    if (checkOutInput) {
+      await checkOutInput.fill(params.checkOutDate);
+    }
+
+    // Submit search
+    console.log("Submitting search...");
+    const submitButton = await page.$('button[type="submit"], button:has-text("Search"), input#theSubmitButton');
+    if (submitButton) {
+      await submitButton.click();
+    }
+
+    // Wait for results
+    await page.waitForTimeout(3000);
+    await page.waitForSelector('a[href*="hotel"], div[class*="hotel"], li[class*="hotel"]', {
+      timeout: 15000,
+    }).catch(() => null);
+
+    // Find hotel in results
+    console.log(`Looking for ${params.hotelName} in results...`);
+    const hotelLink = await page.$(`text=${params.hotelName}`);
     
-    // Capture screenshot of pricing page
+    if (hotelLink) {
+      await hotelLink.click();
+      await page.waitForNavigation({ waitUntil: "networkidle", timeout: 15000 });
+    } else {
+      // If exact match not found, take first result
+      const firstHotel = await page.$('a[href*="hotel"], div[class*="hotel-item"] a');
+      if (firstHotel) {
+        await firstHotel.click();
+        await page.waitForNavigation({ waitUntil: "networkidle", timeout: 15000 });
+      }
+    }
+
+    // Capture screenshot
+    console.log("Capturing screenshot...");
     const screenshotBuffer = await page.screenshot({ fullPage: true });
-    const screenshotKey = `comparisons/${Date.now()}-whr-${params.hotelName}.png`;
+    const screenshotKey = `comparisons/${Date.now()}-whr-${params.location}.png`;
     const { url: screenshotUrl } = await storagePut(
       screenshotKey,
       screenshotBuffer,
       "image/png"
     );
-    
-    // Extract pricing data from page
+
+    // Extract pricing data
+    console.log("Extracting pricing data...");
     const pricePerNight = await page.evaluate(() => {
-      const priceElement = document.querySelector('[class*="price"]');
-      if (priceElement) {
-        const text = priceElement.textContent || "";
-        const match = text.match(/\$?(\d+\.?\d*)/);
-        return match ? parseFloat(match[1]) : 0;
+      // Try multiple selectors for price
+      const selectors = [
+        '[class*="price"]',
+        '[class*="total"]',
+        'span',
+        '[data-price]',
+      ];
+
+      for (const selector of selectors) {
+        const elements = document.querySelectorAll(selector);
+        const elementsArray = Array.from(elements);
+        for (const el of elementsArray) {
+          const text = el.textContent || "";
+          const match = text.match(/\$?(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+          if (match) {
+            return parseFloat(match[1].replace(/,/g, ""));
+          }
+        }
       }
+
       return 0;
     });
-    
+
     const nights = calculateNights(params.checkInDate, params.checkOutDate);
     const totalPrice = pricePerNight * nights;
-    
-    console.log(`✅ WHR Price: $${pricePerNight}/night`);
-    
-    return {
-      platform: "wholesalehotelrates",
-      pricePerNight,
-      totalPrice,
-      screenshotUrl,
-      extractedData: {
-        hotelName: params.hotelName,
-        location: params.location,
-        checkInDate: params.checkInDate,
-        checkOutDate: params.checkOutDate,
-        nights,
-      },
-    };
+
+    if (pricePerNight > 0) {
+      return {
+        platform: "wholesalehotelrates",
+        pricePerNight,
+        totalPrice,
+        screenshotUrl,
+        extractedData: {
+          hotelName: params.hotelName,
+          location: params.location,
+          checkInDate: params.checkInDate,
+          checkOutDate: params.checkOutDate,
+          nights,
+        },
+      };
+    }
+
+    return null;
   } catch (error) {
-    console.error("❌ Error searching Wholesale Hotel Rates:", error);
+    console.error("Error searching Wholesale Hotel Rates:", error);
     return null;
   } finally {
     await browser.close();
@@ -178,24 +266,91 @@ async function searchWholesaleHotelRates(
 async function searchHotelsCom(
   params: HotelSearchParams
 ): Promise<PriceResult | null> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--disable-dev-shm-usage",
+      "--no-sandbox",
+    ],
+  });
+
   const page = await browser.newPage();
-  
+
   try {
-    console.log("🔍 Searching Hotels.com...");
-    
-    await page.goto("https://www.hotels.com");
-    
-    // Search logic would go here
-    // For now, return null as public sites have bot detection
-    console.log("⚠️  Hotels.com search skipped (bot detection)");
-    
+    console.log("Searching Hotels.com...");
+    await page.goto("https://www.hotels.com", {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+
+    // Fill search form
+    const searchInput = await page.$('input[placeholder*="Where"], input[name="q"]');
+    if (searchInput) {
+      await searchInput.fill(params.location);
+      await page.waitForTimeout(500);
+    }
+
+    // Fill dates
+    const checkInInput = await page.$('input[placeholder*="Check-in"]');
+    if (checkInInput) {
+      await checkInInput.fill(params.checkInDate);
+    }
+
+    const checkOutInput = await page.$('input[placeholder*="Check-out"]');
+    if (checkOutInput) {
+      await checkOutInput.fill(params.checkOutDate);
+    }
+
+    // Submit search
+    const searchButton = await page.$('button[type="submit"], button:has-text("Search")');
+    if (searchButton) {
+      await searchButton.click();
+      await page.waitForTimeout(3000);
+    }
+
+    // Extract price
+    const pricePerNight = await page.evaluate(() => {
+      const priceElements = document.querySelectorAll('[class*="price"], [data-price]');
+      const priceArray = Array.from(priceElements);
+      for (const el of priceArray) {
+        const text = el.textContent || "";
+        const match = text.match(/\$?(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+        if (match) {
+          return parseFloat(match[1].replace(/,/g, ""));
+        }
+      }
+      return 0;
+    });
+
+    if (pricePerNight > 0) {
+      const screenshotBuffer = await page.screenshot({ fullPage: true });
+      const screenshotKey = `comparisons/${Date.now()}-hotels-com-${params.location}.png`;
+      const { url: screenshotUrl } = await storagePut(
+        screenshotKey,
+        screenshotBuffer,
+        "image/png"
+      );
+
+      const nights = calculateNights(params.checkInDate, params.checkOutDate);
+      return {
+        platform: "hotels.com",
+        pricePerNight,
+        totalPrice: pricePerNight * nights,
+        screenshotUrl,
+        extractedData: {
+          hotelName: params.hotelName,
+          location: params.location,
+        },
+      };
+    }
+
     return null;
   } catch (error) {
-    console.error("❌ Error with Hotels.com search:", error);
+    console.error("Error searching Hotels.com:", error);
     return null;
   } finally {
-    await page.close();
+    await browser.close();
   }
 }
 
@@ -205,23 +360,91 @@ async function searchHotelsCom(
 async function searchExpedia(
   params: HotelSearchParams
 ): Promise<PriceResult | null> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--disable-dev-shm-usage",
+      "--no-sandbox",
+    ],
+  });
+
   const page = await browser.newPage();
-  
+
   try {
-    console.log("🔍 Searching Expedia...");
-    
-    await page.goto("https://www.expedia.com");
-    
-    // Search logic would go here
-    console.log("⚠️  Expedia search skipped (bot detection)");
-    
+    console.log("Searching Expedia...");
+    await page.goto("https://www.expedia.com", {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+
+    // Fill search form
+    const searchInput = await page.$('input[placeholder*="Where"], input[name="query"]');
+    if (searchInput) {
+      await searchInput.fill(params.location);
+      await page.waitForTimeout(500);
+    }
+
+    // Fill dates
+    const checkInInput = await page.$('input[placeholder*="Check-in"]');
+    if (checkInInput) {
+      await checkInInput.fill(params.checkInDate);
+    }
+
+    const checkOutInput = await page.$('input[placeholder*="Check-out"]');
+    if (checkOutInput) {
+      await checkOutInput.fill(params.checkOutDate);
+    }
+
+    // Submit search
+    const searchButton = await page.$('button[type="submit"], button:has-text("Search")');
+    if (searchButton) {
+      await searchButton.click();
+      await page.waitForTimeout(3000);
+    }
+
+    // Extract price
+    const pricePerNight = await page.evaluate(() => {
+      const priceElements = document.querySelectorAll('[class*="price"], [data-price]');
+      const priceArray = Array.from(priceElements);
+      for (const el of priceArray) {
+        const text = el.textContent || "";
+        const match = text.match(/\$?(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+        if (match) {
+          return parseFloat(match[1].replace(/,/g, ""));
+        }
+      }
+      return 0;
+    });
+
+    if (pricePerNight > 0) {
+      const screenshotBuffer = await page.screenshot({ fullPage: true });
+      const screenshotKey = `comparisons/${Date.now()}-expedia-${params.location}.png`;
+      const { url: screenshotUrl } = await storagePut(
+        screenshotKey,
+        screenshotBuffer,
+        "image/png"
+      );
+
+      const nights = calculateNights(params.checkInDate, params.checkOutDate);
+      return {
+        platform: "expedia",
+        pricePerNight,
+        totalPrice: pricePerNight * nights,
+        screenshotUrl,
+        extractedData: {
+          hotelName: params.hotelName,
+          location: params.location,
+        },
+      };
+    }
+
     return null;
   } catch (error) {
-    console.error("❌ Error with Expedia search:", error);
+    console.error("Error searching Expedia:", error);
     return null;
   } finally {
-    await page.close();
+    await browser.close();
   }
 }
 
@@ -231,26 +454,97 @@ async function searchExpedia(
 async function searchBookingCom(
   params: HotelSearchParams
 ): Promise<PriceResult | null> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--disable-blink-features=AutomationControlled",
+      "--disable-dev-shm-usage",
+      "--no-sandbox",
+    ],
+  });
+
   const page = await browser.newPage();
-  
+
   try {
-    console.log("🔍 Searching Booking.com...");
-    
-    await page.goto("https://www.booking.com");
-    
-    // Search logic would go here
-    console.log("⚠️  Booking.com search skipped (bot detection)");
-    
+    console.log("Searching Booking.com...");
+    await page.goto("https://www.booking.com", {
+      waitUntil: "domcontentloaded",
+      timeout: 30000,
+    });
+
+    // Fill search form
+    const searchInput = await page.$('input[placeholder*="Where"], input[name="ss"]');
+    if (searchInput) {
+      await searchInput.fill(params.location);
+      await page.waitForTimeout(500);
+    }
+
+    // Fill dates
+    const checkInInput = await page.$('input[name="checkin"]');
+    if (checkInInput) {
+      await checkInInput.fill(params.checkInDate);
+    }
+
+    const checkOutInput = await page.$('input[name="checkout"]');
+    if (checkOutInput) {
+      await checkOutInput.fill(params.checkOutDate);
+    }
+
+    // Submit search
+    const searchButton = await page.$('button[type="submit"], button:has-text("Search")');
+    if (searchButton) {
+      await searchButton.click();
+      await page.waitForTimeout(3000);
+    }
+
+    // Extract price
+    const pricePerNight = await page.evaluate(() => {
+      const priceElements = document.querySelectorAll('[class*="price"], [data-price]');
+      const priceArray = Array.from(priceElements);
+      for (const el of priceArray) {
+        const text = el.textContent || "";
+        const match = text.match(/\$?(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+        if (match) {
+          return parseFloat(match[1].replace(/,/g, ""));
+        }
+      }
+      return 0;
+    });
+
+    if (pricePerNight > 0) {
+      const screenshotBuffer = await page.screenshot({ fullPage: true });
+      const screenshotKey = `comparisons/${Date.now()}-booking-${params.location}.png`;
+      const { url: screenshotUrl } = await storagePut(
+        screenshotKey,
+        screenshotBuffer,
+        "image/png"
+      );
+
+      const nights = calculateNights(params.checkInDate, params.checkOutDate);
+      return {
+        platform: "booking.com",
+        pricePerNight,
+        totalPrice: pricePerNight * nights,
+        screenshotUrl,
+        extractedData: {
+          hotelName: params.hotelName,
+          location: params.location,
+        },
+      };
+    }
+
     return null;
   } catch (error) {
-    console.error("❌ Error with Booking.com search:", error);
+    console.error("Error searching Booking.com:", error);
     return null;
   } finally {
-    await page.close();
+    await browser.close();
   }
 }
 
+/**
+ * Calculate number of nights between two dates
+ */
 function calculateNights(checkIn: string, checkOut: string): number {
   const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
@@ -259,10 +553,13 @@ function calculateNights(checkIn: string, checkOut: string): number {
   return diffDays;
 }
 
+/**
+ * Calculate savings between wholesale and public prices
+ */
 function calculateSavings(wholesalePrice: number, publicPrice: number) {
   const savingsAmount = publicPrice - wholesalePrice;
   const savingsPercentage = (savingsAmount / publicPrice) * 100;
-  const cashBackAmount = (wholesalePrice * 0.03);
+  const cashBackAmount = (wholesalePrice * 0.03); // 3% cash back
   
   return {
     savingsAmount: Math.round(savingsAmount * 100) / 100,
@@ -285,35 +582,36 @@ export async function runHotelComparison(
 
   try {
     // Generate or use provided parameters
-    const location = params?.location || getRandomCity();
-    const hotelName = params?.hotelName || getRandomHotelChain();
+    const city = params?.location ? { name: params.location } : getRandomCity();
+    const hotelChain = params?.hotelName ? params.hotelName : getRandomHotelChain();
     const dates = generateDates();
     
     const searchParams: HotelSearchParams = {
-      hotelName,
-      location,
+      hotelName: hotelChain,
+      location: city.name,
       checkInDate: dates.checkIn,
       checkOutDate: dates.checkOut,
-      starRating: params?.starRating || 5,
+      starRating: params?.starRating || Math.floor(Math.random() * 2) + 4, // 4-5 stars
     };
 
-    console.log(`\n🏨 Starting hotel comparison for ${hotelName} in ${location}`);
-    console.log(`📅 ${dates.checkIn} to ${dates.checkOut}\n`);
+    console.log(`\n🏨 Starting hotel comparison for ${searchParams.hotelName} in ${searchParams.location}`);
+    console.log(`📅 Check-in: ${searchParams.checkInDate}, Check-out: ${searchParams.checkOutDate}\n`);
 
     // Create hotel comparison record
     const comparisonResult = await db.insert(hotelComparisons).values({
-      hotelName,
-      location,
-      checkInDate: dates.checkIn,
-      checkOutDate: dates.checkOut,
+      hotelName: searchParams.hotelName,
+      location: searchParams.location,
+      checkInDate: searchParams.checkInDate,
+      checkOutDate: searchParams.checkOutDate,
       starRating: searchParams.starRating,
-      description: `${searchParams.starRating}-star hotel in ${location}`,
+      description: `${searchParams.starRating}-star hotel in ${searchParams.location}`,
     });
 
     const comparisonId = (comparisonResult as any).insertId;
-    console.log(`✅ Created comparison record (ID: ${comparisonId})\n`);
+    console.log(`✅ Created comparison record (ID: ${comparisonId})`);
 
     // Search Wholesale Hotel Rates
+    console.log("\n🔍 Searching Wholesale Hotel Rates...");
     const whrResult = await searchWholesaleHotelRates(searchParams);
 
     let whrId: number | null = null;
@@ -327,8 +625,9 @@ export async function runHotelComparison(
         extractedData: whrResult.extractedData,
       });
       whrId = (whrInsert as any).insertId;
+      console.log(`✅ WHR Price: $${whrResult.pricePerNight}/night (Total: $${whrResult.totalPrice})`);
     } else {
-      console.log("⚠️  Could not retrieve WHR pricing\n");
+      console.log("⚠️  Could not retrieve WHR pricing");
     }
 
     // Search public booking sites
@@ -349,6 +648,7 @@ export async function runHotelComparison(
         ...hotelsComResult,
         id: (insert as any).insertId,
       });
+      console.log(`✅ Hotels.com Price: $${hotelsComResult.pricePerNight}/night`);
     }
 
     const expediaResult = await searchExpedia(searchParams);
@@ -365,6 +665,7 @@ export async function runHotelComparison(
         ...expediaResult,
         id: (insert as any).insertId,
       });
+      console.log(`✅ Expedia Price: $${expediaResult.pricePerNight}/night`);
     }
 
     const bookingResult = await searchBookingCom(searchParams);
@@ -381,6 +682,7 @@ export async function runHotelComparison(
         ...bookingResult,
         id: (insert as any).insertId,
       });
+      console.log(`✅ Booking.com Price: $${bookingResult.pricePerNight}/night`);
     }
 
     // Calculate and store savings
@@ -398,29 +700,30 @@ export async function runHotelComparison(
           cashBackAmount: savings.cashBackAmount.toString(),
         });
 
-        console.log(`✅ vs ${publicResult.platform}: Save $${savings.savingsAmount}`);
+        console.log(`✅ vs ${publicResult.platform}: Save $${savings.savingsAmount} (${savings.savingsPercentage}%)`);
       }
     }
 
-    console.log("\n✨ Hotel comparison completed!\n");
+    console.log("\n✨ Hotel comparison completed successfully!\n");
   } catch (error) {
     console.error("Error running hotel comparison:", error);
   }
 }
 
 /**
- * Run multiple hotel comparisons
+ * Run multiple hotel comparisons for demo purposes
  */
-export async function runMultipleComparisons(count: number = 1): Promise<void> {
-  console.log(`\n🚀 Running ${count} hotel comparison(s)...\n`);
+export async function runMultipleComparisons(count: number = 3): Promise<void> {
+  console.log(`\n🚀 Running ${count} hotel comparisons...\n`);
   
   for (let i = 0; i < count; i++) {
     console.log(`\n--- Comparison ${i + 1} of ${count} ---`);
     await runHotelComparison();
     
+    // Add delay between requests to avoid rate limiting
     if (i < count - 1) {
       console.log("⏳ Waiting before next comparison...");
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
   

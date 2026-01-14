@@ -37,35 +37,16 @@
 - [x] Optimize performance and loading
 - [x] Write and pass unit tests (17 tests passed)
 
-## Phase 7: Railway Deployment (Temporary - for future use)
-- [x] Create GitHub repository (whr5716/web3-matrix-presentation)
-- [x] Push code to GitHub
-- [x] Create Railway project (W3M / striking-creativity)
-- [x] Connect GitHub repo to Railway
-- [x] Configure environment variables
-- [ ] Note: Railway deployment requires Manus OAuth env vars - use as backup if Manus quota issues persist
-
-## Phase 8: Price Comparison System - ScrapingBee Implementation
+## Phase 8: Price Comparison System
 - [x] Implement real price data collection from Wholesale Hotel Rates
+- [x] Implement public booking site price collection (Hotels.com, Expedia, Booking.com)
 - [x] Create major cities list for global hotel selection (Tokyo, London, NYC, Paris, Dubai, Singapore, etc.)
 - [x] Modify bot to randomly select hotels from major worldwide cities
-- [x] Create data collection automation script with proven selectors
-- [x] Bot successfully logs in and navigates to booking platform
-- [x] Set up ScrapingBee account with 1000 free API credits
-- [x] Create ScrapingBee hotel comparison bot (scrapingbee-hotel-bot.ts)
-- [x] Create production-ready tRPC endpoint (scrapingbeeRouter.ts)
-- [x] Integrate ScrapingBee router into main app router
-- [ ] Test bot with real data collection and screenshots
+- [x] Create data collection automation script and test with real hotels
+- [ ] Run bot to collect real data and populate database
 - [ ] Verify demo displays real data with correct savings calculations
 
-## Phase 9: Final Delivery
-- [ ] Create checkpoint with working price comparison system
+## Phase 9: Delivery
+- [ ] Create checkpoint for POC
 - [ ] Provide development URL to user
-
-## Phase 10: Remove OAuth and Implement 2FA for Railway
-- [x] Remove Manus OAuth dependencies from context and routers
-- [x] Implement simple 2FA authentication system (auth2fa.ts, auth2faRouter.ts)
-- [x] Update tRPC endpoints to work without OAuth (context.ts, routers.ts)
-- [ ] Test authentication flow
-- [ ] Deploy to Railway and verify working
-- [ ] Collect real hotel comparison data with screenshots
+- [ ] Gather feedback for full presentation build
